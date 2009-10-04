@@ -859,6 +859,428 @@ unsigned long lastLogWrite = 0;  // Milliseconds since boot that the last entry 
 volatile unsigned long logButtonTimestamp = 0;
 #endif
 
+
+/**
+ * Initialization
+ */
+void setup()                    // run once, when the sketch starts
+{
+#ifdef MEGA
+  HOST.begin(HOST_BAUD_RATE);
+  //pinMode(buttonGnd, OUTPUT);
+  //digitalWrite(buttonGnd, LOW);
+#endif
+
+  hostPrintLn("OBDuino32KMega v158 starting up");
+#ifdef DEBUG
+  hostPrintLn("*********** DEBUG MODE *************");
+#endif
+
+#ifdef ENABLE_VDIP
+  initVdip();
+#endif
+
+#ifdef ENABLE_GPS
+  initGps();
+#endif
+
+#ifndef ELM
+  hostPrint(" * Initialising non-ELM OBD     ");
+  boolean success;
+  // init pinouts
+  pinMode(K_OUT, OUTPUT);
+  pinMode(K_IN, INPUT);
+  #ifdef useL_Line
+  pinMode(L_OUT, OUTPUT);
+  #endif
+  hostPrintLn("[OK]");
+#endif
+
+  // buttons init
+  hostPrint(" * Initialising buttons         ");
+  pinMode(lbuttonPin, INPUT);
+  pinMode(mbuttonPin, INPUT);
+  pinMode(rbuttonPin, INPUT);
+  // "turn on" the internal pullup resistors
+  digitalWrite(lbuttonPin, HIGH);
+  digitalWrite(mbuttonPin, HIGH);
+  digitalWrite(rbuttonPin, HIGH);
+
+  // low level interrupt enable stuff
+  // interrupt 1 for the 3 buttons
+  #ifdef MEGA
+  PCMSK2 |= (1 << PCINT16) | (1 << PCINT17) | (1 << PCINT18);
+  PCICR  |= (1 << PCIE2);
+  #else
+  PCMSK1 |= (1 << PCINT11) | (1 << PCINT12) | (1 << PCINT13);
+  PCICR  |= (1 << PCIE1);
+  #endif
+  hostPrintLn("[OK]");
+
+  // load parameters
+  params_load();  // if something is wrong, default parms are used
+
+  // LCD pin init
+  hostPrint(" * Initializing LCD             ");
+  analogWrite(BrightnessPin,brightness[brightnessIdx]);
+  analogWrite(ContrastPin, params.contrast);
+  pinMode(EnablePin,OUTPUT);
+  pinMode(DIPin,OUTPUT);
+  pinMode(DB4Pin,OUTPUT);
+  pinMode(DB5Pin,OUTPUT);
+  pinMode(DB6Pin,OUTPUT);
+  pinMode(DB7Pin,OUTPUT);
+  delay(100);
+
+  engine_off = engine_on = millis();
+
+  lcd_init();
+  lcd_print_P(PSTR("OBDuino32kM v158"));
+  hostPrintLn("[OK]");
+
+#ifndef ELM
+  hostPrint(" * Non-ELM init                 ");
+  hostPrint(" * Non-ELM init ");
+  do // init loop
+  {
+    lcd_gotoXY(2,1);
+    #ifdef ISO_9141
+      lcd_print_P(PSTR("ISO9141 Init"));
+      hostPrint("ISO9141 Init ");
+    #elif defined ISO_14230_fast
+      lcd_print_P(PSTR("ISO14230 Fast"));
+      hostPrint("ISO14230 Fast");
+    #elif defined ISO_14230_slow
+      lcd_print_P(PSTR("ISO14230 Slow"));
+      hostPrint("ISO14230 Slow");
+    #endif
+    
+    
+    #ifdef DEBUG // In debug mode we need to skip init.
+      success=true;
+    #else 
+      ISO_InitStep = 0;
+      do
+      {
+        iso_init();
+      } while (ISO_InitStep != 0);
+
+      success = ECUconnection;
+      #ifdef useECUState
+        oldECUconnection != ECUconnection; // force 'turn on' stuff in main loop
+      #endif
+   #endif
+    
+    lcd_gotoXY(2,1);
+    lcd_print_P(success ? PSTR("Successful!  ") : PSTR("Failed!         "));
+
+    delay(1000);
+  }
+  while(!success); // end init loop
+  hostPrintLn("   [OK]");
+#else
+  hostPrint(" * ELM init                     ");
+  elm_init();
+  hostPrintLn("[OK]");
+#endif
+
+#ifdef carAlarmScreen
+  hostPrint(" * Car-alarm screen setup       ");
+   refreshAlarmScreen = true;
+   hostPrintLn("[OK]");
+#endif      
+
+  // check supported PIDs
+  hostPrint(" * Checking supported PIDs      ");
+  check_supported_pids();
+  hostPrintLn("[OK]");
+
+  // check if we have MIL code
+  hostPrint(" * Checking MIL code            ");
+  //check_mil_code();
+  hostPrintLn("[OK]");
+
+  lcd_cls();
+  old_time=millis();  // epoch
+  getpid_time=old_time;
+  
+  #ifdef ENABLE_VDIP
+  hostPrint(" * Attaching logging ISR        ");
+  // Interrupt triggered by pressing "log on/off" button
+  attachInterrupt(1, modeButton, FALLING);
+  hostPrintLn("[OK]");
+  #endif
+  
+  #ifdef ENABLE_PWRFAILDETECT
+  // Interrupt triggered by falling voltage on power supply input
+  hostPrint(" * Attaching powerfail ISR      ");
+  attachInterrupt(0, powerFail, FALLING);
+  hostPrintLn("[OK]");
+  #endif
+  hostPrintLn("******** Startup completed *********");
+}
+
+/**
+ * Main loop
+ */
+void loop()
+{
+  #ifdef MEGA
+  // Process any commands from the host
+  processHostCommands();
+  #endif
+  
+  #ifdef ENABLE_VDIP
+  // Echo data from the VDIP back to the host
+  processVdipBuffer();
+
+  char vdipBuffer[160];
+  PString logEntry( vdipBuffer, sizeof( vdipBuffer ) ); // Create a PString object called logEntry
+  char valBuffer[15];  // Buffer for converting numbers to strings before appending to vdipBuffer
+  #endif
+  
+  #ifdef ENABLE_GPS
+  processGpsBuffer();
+  if( logActive == 1 )
+  {
+    gps.f_get_position( &gpsFLat, &gpsFLon, &gpsAge );
+    //gps.get_datetime( &gpsDate, &gpsTime, &gpsAge );
+    //gps.crack_datetime( &gpsYear, &gpsMonth, &gpsDay, &gpsHour, &gpsMinute, &gpsSecond, &gpsHundredths, &gpsAge );
+
+    //char valBuffer[15];
+
+    // Latitude
+    floatToString(valBuffer, gpsFLat, 5);
+    logEntry += valBuffer;
+    logEntry += ",";
+
+    // Longitude
+    floatToString(valBuffer, gpsFLon, 5);
+    logEntry += valBuffer;
+    logEntry += ",";
+
+    // Altitude (meters)
+    floatToString(valBuffer, gps.f_altitude(), 0);
+    logEntry += valBuffer;
+    logEntry += ",";
+
+    // Speed (km/h)
+    floatToString(valBuffer, gps.f_speed_kmph(), 0);
+    logEntry += valBuffer;
+    logEntry += ",";
+  }
+  #endif
+
+  #ifdef useECUState
+    #ifdef DEBUG
+      ECUconnection = true;
+      has_rpm = true;  
+    #else
+      ECUconnection = verifyECUAlive();
+    #endif
+
+  if (oldECUconnection != ECUconnection)
+  {
+    if (ECUconnection)
+    {
+      unsigned long nowOn = millis();
+      unsigned long engineOffPeriod = calcTimeDiff(engine_off, nowOn);
+      
+      analogWrite(BrightnessPin,brightness[brightnessIdx]);
+ 
+      if (engineOffPeriod > (params.OutingStopOver * MINUTES_GRANULARITY * MILLIS_PER_MINUTE))
+      {
+        trip_reset(OUTING, false);
+        engine_on = nowOn;
+      }
+      else
+      {
+        // combine last trip time to this one! Not including the stop over time
+        engine_on = nowOn - calcTimeDiff(engine_on, engine_off);
+      }  
+ 
+      if (engineOffPeriod > (params.TripStopOver * MILLIS_PER_HOUR))
+      {
+        trip_reset(TRIP, false);
+      }
+    }
+    else  // Car is off
+    {
+      #ifdef do_ISO_Reinit
+        ISO_InitStep = 0;
+      #endif
+
+      engine_off = millis();  // Record the time the engine was shut off
+      params_save();
+      lcd_cls_print_P(PSTR("TRIPS SAVED!"));
+      // Display how much fuel for the tank we wasted.
+      char str[STRLEN] = {0};
+      lcd_gotoXY(0,1);
+      lcd_print_P(PSTR("Wasted:"));
+      lcd_gotoXY(LCD_split,1);
+      get_waste(str,TANK);
+      lcd_print(str);
+
+      delay(2000);
+      // Turn the Backlight off
+      analogWrite(BrightnessPin, brightness[0]);
+
+      #ifdef carAlarmScreen
+      refreshAlarmScreen = true;
+      #endif
+    }  
+    oldECUconnection = ECUconnection;
+  } 
+
+  if (ECUconnection)
+  {
+    // this read and assign vss and maf and accumulate trip data
+    accu_trip();
+  
+    // display on LCD
+    for(byte current_PID=0; current_PID<LCD_PID_count; current_PID++)
+      display(current_PID, params.screen[active_screen].PID[current_PID]);
+  }
+  else
+  {
+    #ifdef carAlarmScreen
+      // ECU is off so print ready screen instead of PIDS while we wait for ECU action
+      displayAlarmScreen();
+    #else
+    // for some reason the display on LCD
+    for(byte current_PID=0; current_PID<LCD_PID_count; current_PID++)
+      display(current_PID, params.screen[active_screen].PID[current_PID]);
+    #endif
+
+    #ifdef do_ISO_Reinit
+      #ifndef carAlarmScreen  
+      #error ISO reinit will not function when not displaying the car alarm screen (#define carAlarmScreen)
+      #endif
+      iso_init();
+    #endif
+  }    
+#else
+  char str[STRLEN];
+
+  // test if engine is started
+  has_rpm = (get_pid(ENGINE_RPM, str, &tempLong) && tempLong > 0) ? 1 : 0;
+
+  if(engine_started==0 && has_rpm!=0)
+  {
+    unsigned long nowOn = millis();
+    unsigned long engineOffPeriod = calcTimeDiff(engine_off, nowOn);
+    engine_started=1;
+    param_saved=0;
+    analogWrite(BrightnessPin,brightness[brightnessIdx]);
+
+    if (engineOffPeriod > (params.OutingStopOver * MINUTES_GRANULARITY * MILLIS_PER_MINUTE))
+    {
+      //Reset the current outing trip from last trip
+      trip_reset(OUTING, false);
+      engine_on = nowOn; //Reset the time at which the car starts at
+    }
+    else
+    {
+       // combine last trip time to this one! Not including the stop over time
+       engine_on = nowOn - calcTimeDiff(engine_on, engine_off);
+    }  
+    
+    if (engineOffPeriod > (params.TripStopOver * MILLIS_PER_HOUR))
+    {
+      trip_reset(TRIP, false);
+    }
+  }
+
+  // if engine was started but RPM is now 0
+  // save param only once, by flopping param_saved
+  if(has_rpm==0 && param_saved==0 && engine_started!=0)
+  {
+    engine_off = millis();  //record the time the engine was shut off
+    params_save();
+    param_saved=1;
+    engine_started=0;
+    lcd_cls_print_P(PSTR("TRIPS SAVED!"));
+    //Lets Display how much fuel for the tank we wasted.
+    char str[STRLEN] = {0};
+    lcd_gotoXY(0,1);
+    lcd_print_P(PSTR("Wasted:"));
+    lcd_gotoXY(LCD_split,1);
+    get_waste(str,TANK);
+    lcd_print(str);
+    delay(2000);
+    //Turn the Backlight off
+    analogWrite(BrightnessPin,brightness[0]);
+
+    #ifdef carAlarmScreen
+      refreshAlarmScreen = true;
+    #endif
+  }
+
+  #ifdef carAlarmScreen
+    displayAlarmScreen();
+  #else
+  
+  // this read and assign vss and maf and accumulate trip data
+  accu_trip();
+
+  // display on LCD
+  for(byte current_PID=0; current_PID<LCD_PID_count; current_PID++)
+    display(current_PID, params.screen[active_screen].PID[current_PID]);
+
+  #endif
+
+#endif
+
+  // test buttons
+  test_buttons();
+
+  #ifdef ENABLE_VDIP
+  // Get PIDs we want to store on the memory stick
+  if( logActive == 1 )
+  {
+    for(byte i=0; i < logPidCount; i++) {
+      if (get_pid( logPid[i], str, &tempLong))
+        logEntry += tempLong;
+      logEntry += ",";
+    }
+  }
+
+  /////////////////////// WRITE TO FLASH //////////////////////////////
+  if( logActive == 1 )
+  {
+    if(millis() - lastLogWrite > LOG_INTERVAL)
+    {
+      digitalWrite(VDIP_WRITE_LED, HIGH);
+      byte position = 0;
+
+      HOST.print(logEntry.length());
+      HOST.print(": ");
+      HOST.println(logEntry);
+
+      VDIP.print("WRF ");
+      VDIP.print(logEntry.length() + 1);  // 1 extra for the newline
+      VDIP.print(13, BYTE);
+
+      while(position < logEntry.length())
+      {
+        if(digitalRead(VDIP_RTS_PIN) == LOW)
+        {
+          VDIP.print(vdipBuffer[position]);
+          position++;
+        } else {
+          HOST.println("BUFFER FULL");
+        }
+      }
+      VDIP.print(13, BYTE);               // End the log entry with a newline
+      digitalWrite(VDIP_WRITE_LED, LOW);
+
+      lastLogWrite = millis();
+    }
+  }
+  #endif
+}
+
+
 // the buttons interrupt
 // this is the interrupt handler for button presses
 ISR(PCINT2_vect)
@@ -3090,426 +3512,6 @@ void needBacklight(boolean On)
     // Assume backlight is normally off, so set according to input On  
     analogWrite(BrightnessPin, brightness[On ? brightnessIdx : 0]);
   }
-}  
-
-/**
- * Initialization
- */
-void setup()                    // run once, when the sketch starts
-{
-#ifdef MEGA
-  HOST.begin(HOST_BAUD_RATE);
-  //pinMode(buttonGnd, OUTPUT);
-  //digitalWrite(buttonGnd, LOW);
-#endif
-
-  hostPrintLn("OBDuino32KMega v158 starting up");
-#ifdef DEBUG
-  hostPrintLn("*********** DEBUG MODE *************");
-#endif
-
-#ifdef ENABLE_VDIP
-  initVdip();
-#endif
-
-#ifdef ENABLE_GPS
-  initGps();
-#endif
-
-#ifndef ELM
-  hostPrint(" * Initialising non-ELM OBD     ");
-  boolean success;
-  // init pinouts
-  pinMode(K_OUT, OUTPUT);
-  pinMode(K_IN, INPUT);
-  #ifdef useL_Line
-  pinMode(L_OUT, OUTPUT);
-  #endif
-  hostPrintLn("[OK]");
-#endif
-
-  // buttons init
-  hostPrint(" * Initialising buttons         ");
-  pinMode(lbuttonPin, INPUT);
-  pinMode(mbuttonPin, INPUT);
-  pinMode(rbuttonPin, INPUT);
-  // "turn on" the internal pullup resistors
-  digitalWrite(lbuttonPin, HIGH);
-  digitalWrite(mbuttonPin, HIGH);
-  digitalWrite(rbuttonPin, HIGH);
-
-  // low level interrupt enable stuff
-  // interrupt 1 for the 3 buttons
-  #ifdef MEGA
-  PCMSK2 |= (1 << PCINT16) | (1 << PCINT17) | (1 << PCINT18);
-  PCICR  |= (1 << PCIE2);
-  #else
-  PCMSK1 |= (1 << PCINT11) | (1 << PCINT12) | (1 << PCINT13);
-  PCICR  |= (1 << PCIE1);
-  #endif
-  hostPrintLn("[OK]");
-
-  // load parameters
-  params_load();  // if something is wrong, default parms are used
-
-  // LCD pin init
-  hostPrint(" * Initializing LCD             ");
-  analogWrite(BrightnessPin,brightness[brightnessIdx]);
-  analogWrite(ContrastPin, params.contrast);
-  pinMode(EnablePin,OUTPUT);
-  pinMode(DIPin,OUTPUT);
-  pinMode(DB4Pin,OUTPUT);
-  pinMode(DB5Pin,OUTPUT);
-  pinMode(DB6Pin,OUTPUT);
-  pinMode(DB7Pin,OUTPUT);
-  delay(100);
-
-  engine_off = engine_on = millis();
-
-  lcd_init();
-  lcd_print_P(PSTR("OBDuino32kM v158"));
-  hostPrintLn("[OK]");
-
-#ifndef ELM
-  hostPrint(" * Non-ELM init                 ");
-  hostPrint(" * Non-ELM init ");
-  do // init loop
-  {
-    lcd_gotoXY(2,1);
-    #ifdef ISO_9141
-      lcd_print_P(PSTR("ISO9141 Init"));
-      hostPrint("ISO9141 Init ");
-    #elif defined ISO_14230_fast
-      lcd_print_P(PSTR("ISO14230 Fast"));
-      hostPrint("ISO14230 Fast");
-    #elif defined ISO_14230_slow
-      lcd_print_P(PSTR("ISO14230 Slow"));
-      hostPrint("ISO14230 Slow");
-    #endif
-    
-    
-    #ifdef DEBUG // In debug mode we need to skip init.
-      success=true;
-    #else 
-      ISO_InitStep = 0;
-      do
-      {
-        iso_init();
-      } while (ISO_InitStep != 0);
-
-      success = ECUconnection;
-      #ifdef useECUState
-        oldECUconnection != ECUconnection; // force 'turn on' stuff in main loop
-      #endif
-   #endif
-    
-    lcd_gotoXY(2,1);
-    lcd_print_P(success ? PSTR("Successful!  ") : PSTR("Failed!         "));
-
-    delay(1000);
-  }
-  while(!success); // end init loop
-  hostPrintLn("   [OK]");
-#else
-  hostPrint(" * ELM init                     ");
-  elm_init();
-  hostPrintLn("[OK]");
-#endif
-
-#ifdef carAlarmScreen
-  hostPrint(" * Car-alarm screen setup       ");
-   refreshAlarmScreen = true;
-   hostPrintLn("[OK]");
-#endif      
-
-  // check supported PIDs
-  hostPrint(" * Checking supported PIDs      ");
-  check_supported_pids();
-  hostPrintLn("[OK]");
-
-  // check if we have MIL code
-  hostPrint(" * Checking MIL code            ");
-  //check_mil_code();
-  hostPrintLn("[OK]");
-
-  lcd_cls();
-  old_time=millis();  // epoch
-  getpid_time=old_time;
-  
-  #ifdef ENABLE_VDIP
-  hostPrint(" * Attaching logging ISR        ");
-  // Interrupt triggered by pressing "log on/off" button
-  attachInterrupt(1, modeButton, FALLING);
-  hostPrintLn("[OK]");
-  #endif
-  
-  #ifdef ENABLE_PWRFAILDETECT
-  // Interrupt triggered by falling voltage on power supply input
-  hostPrint(" * Attaching powerfail ISR      ");
-  attachInterrupt(0, powerFail, FALLING);
-  hostPrintLn("[OK]");
-  #endif
-  hostPrintLn("******** Startup completed *********");
-}
-
-/**
- * Main loop
- */
-void loop()
-{
-  #ifdef MEGA
-  // Process any commands from the host
-  processHostCommands();
-  #endif
-  
-  #ifdef ENABLE_VDIP
-  // Echo data from the VDIP back to the host
-  processVdipBuffer();
-
-  char vdipBuffer[160];
-  PString logEntry( vdipBuffer, sizeof( vdipBuffer ) ); // Create a PString object called logEntry
-  char valBuffer[15];  // Buffer for converting numbers to strings before appending to vdipBuffer
-  #endif
-  
-  #ifdef ENABLE_GPS
-  processGpsBuffer();
-  if( logActive == 1 )
-  {
-    gps.f_get_position( &gpsFLat, &gpsFLon, &gpsAge );
-    //gps.get_datetime( &gpsDate, &gpsTime, &gpsAge );
-    //gps.crack_datetime( &gpsYear, &gpsMonth, &gpsDay, &gpsHour, &gpsMinute, &gpsSecond, &gpsHundredths, &gpsAge );
-
-    //char valBuffer[15];
-
-    // Latitude
-    floatToString(valBuffer, gpsFLat, 5);
-    logEntry += valBuffer;
-    logEntry += ",";
-
-    // Longitude
-    floatToString(valBuffer, gpsFLon, 5);
-    logEntry += valBuffer;
-    logEntry += ",";
-
-    // Altitude (meters)
-    floatToString(valBuffer, gps.f_altitude(), 0);
-    logEntry += valBuffer;
-    logEntry += ",";
-
-    // Speed (km/h)
-    floatToString(valBuffer, gps.f_speed_kmph(), 0);
-    logEntry += valBuffer;
-    logEntry += ",";
-  }
-  #endif
-
-  #ifdef useECUState
-    #ifdef DEBUG
-      ECUconnection = true;
-      has_rpm = true;  
-    #else
-      ECUconnection = verifyECUAlive();
-    #endif
-
-  if (oldECUconnection != ECUconnection)
-  {
-    if (ECUconnection)
-    {
-      unsigned long nowOn = millis();
-      unsigned long engineOffPeriod = calcTimeDiff(engine_off, nowOn);
-      
-      analogWrite(BrightnessPin,brightness[brightnessIdx]);
- 
-      if (engineOffPeriod > (params.OutingStopOver * MINUTES_GRANULARITY * MILLIS_PER_MINUTE))
-      {
-        trip_reset(OUTING, false);
-        engine_on = nowOn;
-      }
-      else
-      {
-        // combine last trip time to this one! Not including the stop over time
-        engine_on = nowOn - calcTimeDiff(engine_on, engine_off);
-      }  
- 
-      if (engineOffPeriod > (params.TripStopOver * MILLIS_PER_HOUR))
-      {
-        trip_reset(TRIP, false);
-      }
-    }
-    else  // Car is off
-    {
-      #ifdef do_ISO_Reinit
-        ISO_InitStep = 0;
-      #endif
-
-      engine_off = millis();  // Record the time the engine was shut off
-      params_save();
-      lcd_cls_print_P(PSTR("TRIPS SAVED!"));
-      // Display how much fuel for the tank we wasted.
-      char str[STRLEN] = {0};
-      lcd_gotoXY(0,1);
-      lcd_print_P(PSTR("Wasted:"));
-      lcd_gotoXY(LCD_split,1);
-      get_waste(str,TANK);
-      lcd_print(str);
-
-      delay(2000);
-      // Turn the Backlight off
-      analogWrite(BrightnessPin, brightness[0]);
-
-      #ifdef carAlarmScreen
-      refreshAlarmScreen = true;
-      #endif
-    }  
-    oldECUconnection = ECUconnection;
-  } 
-
-  if (ECUconnection)
-  {
-    // this read and assign vss and maf and accumulate trip data
-    accu_trip();
-  
-    // display on LCD
-    for(byte current_PID=0; current_PID<LCD_PID_count; current_PID++)
-      display(current_PID, params.screen[active_screen].PID[current_PID]);
-  }
-  else
-  {
-    #ifdef carAlarmScreen
-      // ECU is off so print ready screen instead of PIDS while we wait for ECU action
-      displayAlarmScreen();
-    #else
-    // for some reason the display on LCD
-    for(byte current_PID=0; current_PID<LCD_PID_count; current_PID++)
-      display(current_PID, params.screen[active_screen].PID[current_PID]);
-    #endif
-
-    #ifdef do_ISO_Reinit
-      #ifndef carAlarmScreen  
-      #error ISO reinit will not function when not displaying the car alarm screen (#define carAlarmScreen)
-      #endif
-      iso_init();
-    #endif
-  }    
-#else
-  char str[STRLEN];
-
-  // test if engine is started
-  has_rpm = (get_pid(ENGINE_RPM, str, &tempLong) && tempLong > 0) ? 1 : 0;
-
-  if(engine_started==0 && has_rpm!=0)
-  {
-    unsigned long nowOn = millis();
-    unsigned long engineOffPeriod = calcTimeDiff(engine_off, nowOn);
-    engine_started=1;
-    param_saved=0;
-    analogWrite(BrightnessPin,brightness[brightnessIdx]);
-
-    if (engineOffPeriod > (params.OutingStopOver * MINUTES_GRANULARITY * MILLIS_PER_MINUTE))
-    {
-      //Reset the current outing trip from last trip
-      trip_reset(OUTING, false);
-      engine_on = nowOn; //Reset the time at which the car starts at
-    }
-    else
-    {
-       // combine last trip time to this one! Not including the stop over time
-       engine_on = nowOn - calcTimeDiff(engine_on, engine_off);
-    }  
-    
-    if (engineOffPeriod > (params.TripStopOver * MILLIS_PER_HOUR))
-    {
-      trip_reset(TRIP, false);
-    }
-  }
-
-  // if engine was started but RPM is now 0
-  // save param only once, by flopping param_saved
-  if(has_rpm==0 && param_saved==0 && engine_started!=0)
-  {
-    engine_off = millis();  //record the time the engine was shut off
-    params_save();
-    param_saved=1;
-    engine_started=0;
-    lcd_cls_print_P(PSTR("TRIPS SAVED!"));
-    //Lets Display how much fuel for the tank we wasted.
-    char str[STRLEN] = {0};
-    lcd_gotoXY(0,1);
-    lcd_print_P(PSTR("Wasted:"));
-    lcd_gotoXY(LCD_split,1);
-    get_waste(str,TANK);
-    lcd_print(str);
-    delay(2000);
-    //Turn the Backlight off
-    analogWrite(BrightnessPin,brightness[0]);
-
-    #ifdef carAlarmScreen
-      refreshAlarmScreen = true;
-    #endif
-  }
-
-  #ifdef carAlarmScreen
-    displayAlarmScreen();
-  #else
-  
-  // this read and assign vss and maf and accumulate trip data
-  accu_trip();
-
-  // display on LCD
-  for(byte current_PID=0; current_PID<LCD_PID_count; current_PID++)
-    display(current_PID, params.screen[active_screen].PID[current_PID]);
-
-  #endif
-
-#endif
-
-  // test buttons
-  test_buttons();
-
-  #ifdef ENABLE_VDIP
-  // Get PIDs we want to store on the memory stick
-  if( logActive == 1 )
-  {
-    for(byte i=0; i < logPidCount; i++) {
-      if (get_pid( logPid[i], str, &tempLong))
-        logEntry += tempLong;
-      logEntry += ",";
-    }
-  }
-
-  /////////////////////// WRITE TO FLASH //////////////////////////////
-  if( logActive == 1 )
-  {
-    if(millis() - lastLogWrite > LOG_INTERVAL)
-    {
-      digitalWrite(VDIP_WRITE_LED, HIGH);
-      byte position = 0;
-
-      HOST.print(logEntry.length());
-      HOST.print(": ");
-      HOST.println(logEntry);
-
-      VDIP.print("WRF ");
-      VDIP.print(logEntry.length() + 1);  // 1 extra for the newline
-      VDIP.print(13, BYTE);
-
-      while(position < logEntry.length())
-      {
-        if(digitalRead(VDIP_RTS_PIN) == LOW)
-        {
-          VDIP.print(vdipBuffer[position]);
-          position++;
-        } else {
-          HOST.println("BUFFER FULL");
-        }
-      }
-      VDIP.print(13, BYTE);               // End the log entry with a newline
-      digitalWrite(VDIP_WRITE_LED, LOW);
-
-      lastLogWrite = millis();
-    }
-  }
-  #endif
 }
 
 
