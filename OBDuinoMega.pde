@@ -1,5 +1,12 @@
-/* OBDuino32K  (Requres Atmega328 for your Arduino)
-
+/**
+ * OBDuinoMega  (Requres ATmega1280 for some features, can
+ * build for Atmega328 if features are turned off)
+ *
+ * Based on OBDuino32K by many people as credited below.
+ *
+ * Mega support added by Jonathan Oxer <jon@oxer.com.au>
+ */
+/**
  Copyright (C) 2008-2009
 
  Main coding/ISO/ELM: Fr�d�ric (aka Magister on ecomodder.com)
@@ -95,7 +102,7 @@ To-Do:
 
 // Comment out to just try the PIDs without need to find ECU 
 // Uncomment to use ECU polling to see if car is On or Off 
-//#define useECUState
+#define useECUState
 
 // Comment out if ISO 9141 does not need to reinit
 // Uncomment define below to force reinitialization of ISO 9141 after no ECU communication
@@ -871,7 +878,7 @@ void setup()                    // run once, when the sketch starts
   //digitalWrite(buttonGnd, LOW);
 #endif
 
-  hostPrintLn("OBDuino32KMega v158 starting up");
+  hostPrintLn("OBDuinoMega starting up");
 #ifdef DEBUG
   hostPrintLn("*********** DEBUG MODE *************");
 #endif
@@ -935,12 +942,11 @@ void setup()                    // run once, when the sketch starts
   engine_off = engine_on = millis();
 
   lcd_init();
-  lcd_print_P(PSTR("OBDuino32kM v158"));
+  lcd_print_P(PSTR("OBDuinoMega"));
   hostPrintLn("[OK]");
 
 #ifndef ELM
   hostPrint(" * Non-ELM init                 ");
-  hostPrint(" * Non-ELM init ");
   do // init loop
   {
     lcd_gotoXY(2,1);
