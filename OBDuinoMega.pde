@@ -1059,21 +1059,17 @@ void loop()
     floatToString(valBuffer, gpsFLat, 5);
     logEntry += valBuffer;
     logEntry += ",";
-
     // Longitude
     floatToString(valBuffer, gpsFLon, 5);
     logEntry += valBuffer;
     logEntry += ",";
-
     // Altitude (meters)
     floatToString(valBuffer, gps.f_altitude(), 0);
     logEntry += valBuffer;
     logEntry += ",";
-
     // Speed (km/h)
     floatToString(valBuffer, gps.f_speed_kmph(), 0);
     logEntry += valBuffer;
-    logEntry += ",";
   }
   #endif
 
@@ -1245,9 +1241,9 @@ void loop()
   if( logActive == 1 )
   {
     for(byte i=0; i < logPidCount; i++) {
+      logEntry += ",";
       if (get_pid( logPid[i], str, &tempLong))
         logEntry += tempLong;
-      logEntry += ",";
     }
   }
 
