@@ -102,7 +102,7 @@ To-Do:
 
 // Comment out to just try the PIDs without need to find ECU 
 // Uncomment to use ECU polling to see if car is On or Off 
-#define useECUState
+//#define useECUState
 
 // Comment out if ISO 9141 does not need to reinit
 // Uncomment define below to force reinitialization of ISO 9141 after no ECU communication
@@ -229,9 +229,9 @@ byte brightnessIdx=2;
 /* LCD Display parameters */
 /* Adjust LCD_width or LCD_rows if LCD is different than 16 characters by 2 rows*/
 // How many rows of characters for the LCD (must be at least two)
-#define LCD_ROWS 4
+#define LCD_ROWS 2
 // How many characters across for the LCD (must be at least sixteen)
-const byte LCD_width = 20;
+const byte LCD_width = 16;
 // Calculate the middle point of the LCD display width
 const byte LCD_split = LCD_width / 2;
 //Calculate how many PIDs fit on a data screen (two per line)
