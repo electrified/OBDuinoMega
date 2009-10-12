@@ -1285,30 +1285,33 @@ void loop()
 
 // the buttons interrupt
 // this is the interrupt handler for button presses
+#ifdef MEGA
 ISR(PCINT2_vect)
 {
-#if 0
   static unsigned long last_millis = 0;
   unsigned long m = millis();
 
   if (m - last_millis > 20)
-  { // do pushbutton stuff
-    #ifdef MEGA
+  {
     buttonState |= ~PINK;
-    #else
-    buttonState |= ~PINC;
-    #endif
   }
   //  else ignore interrupt: probably a bounce problem
   last_millis = m;
-#else
-  #ifdef MEGA
-  buttonState |= ~PINK;
-  #else
-  buttonState |= ~PINC;
-  #endif
-#endif
 }
+#else
+ISR(PCINT1_vect)
+{
+  static unsigned long last_millis = 0;
+  unsigned long m = millis();
+
+  if (m - last_millis > 20)
+  {
+    buttonState |= ~PINC;
+  }
+  //  else ignore interrupt: probably a bounce problem
+  last_millis = m;
+}
+#endif
 
 #ifdef ELM
 /**
