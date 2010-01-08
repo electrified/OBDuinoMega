@@ -1,14 +1,13 @@
-#include "WProgram.h"
+#include "Arduino\WProgram.h"
 #include <avr/pgmspace.h>
 #include "host.h"
 #include "Common.h"
 #include "LCD.h"
-#include "Calculations.h"
 #include "Display.h"
 #include "Comms.h"
 #include "Utilities.h"
 #include "Menu.h"
-#include "Memory.c"
+#include "Memory.h"
 
 #define buttonsUp 0 // start with the buttons in the 'not pressed' state
 byte buttonState = buttonsUp;
@@ -258,7 +257,7 @@ if(MIDDLE_BUTTON_PRESSED && LEFT_BUTTON_PRESSED)
   {
     hostPrintLn("MI");
     needBacklight(true);    
-    config_menu();
+    //config_menu();
   }
   
   // reset buttons state

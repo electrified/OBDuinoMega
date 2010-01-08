@@ -26,7 +26,7 @@
 
 // Comment to use MC33290 ISO K line chip
 // Uncomment to use ELM327
-#define ELM
+//#define ELM
 
 // Comment out to use only the ISO 9141 K line
 // Uncomment to also use the ISO 9141 L line
@@ -50,4 +50,4 @@
 
 // Comment out to use the PID screen when the car is off (This will interfere with ISO reinit process)
 // Uncomment to use the Car Alarm Screen when the car is off
-#define carAlarmScreen
+//#define carAlarmScreen

@@ -1,5 +1,9 @@
+#ifndef Memory_h
+#define Memory_h
+
+
 #include "LCD.h"
-#include "Calculations.h"
+#include "Display.h"
 #include "Menu.h"
 
 void params_save();
@@ -7,11 +11,11 @@ void params_load();
 int memoryTest();
 
 // How many characters across for the LCD (must be at least sixteen)
-const byte LCD_width = 16;
+extern const byte LCD_width;
 // Calculate the middle point of the LCD display width
-const byte LCD_split = LCD_width / 2;
+extern const byte LCD_split;
 //Calculate how many PIDs fit on a data screen (two per line)
-const byte LCD_PID_count = LCD_ROWS * 2;
+extern const byte LCD_PID_count;
 
 // parameters
 // each trip contains fuel used and distance done
@@ -26,7 +30,7 @@ trip_t;
 // each screen contains n PIDs (two per line)
 typedef struct
 {
-  byte PID[LCD_PID_count];
+  byte PID[16];
 }
 screen_t;
 
@@ -44,7 +48,7 @@ typedef struct
   unsigned int  tank_size;   // tank size in dL or dgal depending of unit
   byte OutingStopOver; // Allowable stop over time (in tens of minutes). Exceeding time starts a new outing.
   byte TripStopOver;   // Allowable stop over time (in hours). Exceeding time starts a new outing.
-  trip_t trip[NBTRIP];        // trip0=tank, trip1=a trip
+  trip_t trip[3];        //NBTRIP trip0=tank, trip1=a trip HACK
   screen_t screen[NBSCREEN];  // screen
 }
 params_t;
@@ -52,3 +56,6 @@ params_t;
 
 params_t getParameters();
 
+extern params_t params;
+
+#endif

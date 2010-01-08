@@ -1,9 +1,14 @@
 // ELMComms.c
-#include "WProgram.h"
-
-#include "ELMComms.h"
+#include "project_defs.h"
 
 #ifdef ELM
+#include "Arduino\WProgram.h"
+#include "ELMComms.h"
+#include "Serial.h"
+#include "common.h"
+#include <avr/pgmspace.h>
+#include "LCD.h"
+
 #define NUL     '\0'
 #define CR      '\r'  // carriage return = 0x0d = 13
 #define PROMPT  '>'
@@ -157,6 +162,7 @@ boolean get_pid_elm(byte pid, byte buf[]) {
   // convert response in hex and return in buf
   elm_compact_response(buf, str);
   #endif
+  return true;
 }
 
 #endif

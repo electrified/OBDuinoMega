@@ -1,6 +1,5 @@
 //LCD.c
-
-#include "WProgram.h"
+#include "Arduino\WProgram.h"
 
 #include <avr/pgmspace.h>
 #include "Common.h"
@@ -20,13 +19,13 @@ byte brightnessIdx = 2;
 #define EnablePin 55
 #define BrightnessPin 5
 #else  // LCD Pins same as mpguino for a Duemilanove or equivalent
-#define DIPin 4 // register select RS
-#define DB4Pin 7
-#define DB5Pin 8
-#define DB6Pin 12
-#define DB7Pin 13
+#define DIPin 3 // register select RS
+#define DB4Pin 4
+#define DB5Pin 5
+#define DB6Pin 6
+#define DB7Pin 7
 #define ContrastPin 6
-#define EnablePin 5
+#define EnablePin 2
 #define BrightnessPin 9
 #endif
 
@@ -202,7 +201,7 @@ void lcd_increase_brightness() {
 
     brightnessIdx = (brightnessIdx + 1) % brightnessLength;
     
-    lcd_setBrightness(brightnessIdx);
+    lcd_setBrightness();
 
     lcd_cls_print_P(PSTR(" LCD backlight"));
     lcd_gotoXY(6, 1);

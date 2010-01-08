@@ -1,16 +1,17 @@
 // Comms.pde
 #include <avr/pgmspace.h>
-#include "WProgram.h"
+#include "Arduino\WProgram.h"
 #include "Common.h"
 #include "ELMComms.h"
-#include "ISOComms.h"
 #include "Comms.h"
 #include "Utilities.h"
 #include "Memory.h"
 #include "Host.h"
-//#include "PString.h"
+//#include "ARduino\Library\PString\PString.h"
 
 prog_char pctldpcts[] PROGMEM="%ld %s"; // used in a couple of place
+
+long tempLong;
 
 unsigned long  pid01to20_support;  // this one always initialized at setup()
 unsigned long  pid21to40_support=0;
@@ -54,19 +55,6 @@ void getElapsedTime(unsigned long *delta_time) {
   *delta_time = time_now - old_time;
   old_time = time_now;
 }
-
-void init_comms() {
-#ifndef ELM
-  hostPrint(" * Initialising non-ELM OBD     ");
-  iso_init_loop();
-  hostPrintLn("   [OK]");
-#else
-  hostPrint(" * ELM init                     ");
-  elm_init();
-  hostPrintLn("[OK]");
-#endif
-}
-
 
 /**
  * get_pid
@@ -369,130 +357,20 @@ boolean is_pid_supported(byte pid, byte mode)
 #ifdef useECUState
 boolean verifyECUAlive(void)
 {
-#ifdef ELM
   char cmd_str[6];   // to send to ELM
   char str[STRLEN];   // to receive from ELM
   sprintf_P(cmd_str, PSTR("01%02X\r"), ENGINE_RPM);
   elm_write(cmd_str);
   elm_read(str, STRLEN);
   return elm_check_response(cmd_str, str) == 0;
-#else //ISO
-  #ifdef do_ISO_Reinit
-  if (!ECUconnection) // only check for off, finding active ECU is handled by successful reiniting 
-  {
-    return ECUconnection;
-  }
-  #endif
-    // Send command to ECU, if it is active, we will get data back.
-    // Set RPM to 1 if ECU active and RPM above 0, otherwise zero.
-    char str[STRLEN];
-    boolean connected = get_pid(ENGINE_RPM, str, &tempLong);
-    has_rpm = (connected && tempLong > 0) ? 1 : 0;
-
-    return connected;
-#endif
 }
 #endif
-
-
-// might be incomplete
-void check_mil_code(long *tempLong)
-{
-  unsigned long n;
-  char str[STRLEN];
-  byte nb;
-#ifndef ELM
-  byte cmd[2];
-  byte buf[6];
-  byte i, j, k;
-#endif
-
-  if (!get_pid(MIL_CODE, str, tempLong))
-    return;  // Invalid return so abort 
-  
-  n = (unsigned long) *tempLong;
-
-  /* A request for this PID returns 4 bytes of data. The first byte contains
-   two pieces of information. Bit A7 (the seventh bit of byte A, the first byte)
-   indicates whether or not the MIL (check engine light) is illuminated. Bits A0
-   through A6 represent the number of diagnostic trouble codes currently flagged
-   in the ECU. The second, third, and fourth bytes give information about the
-   availability and completeness of certain on-board tests. Note that test
-   availability signified by set (1) bit; completeness signified by reset (0)
-   bit. (from Wikipedia)
-   */
-  if(1L<<31 & n)  // test bit A7
-  {
-    // we have MIL on
-    nb=(n>>24) & 0x7F;
-    lcd_cls_print_P(PSTR("CHECK ENGINE ON"));
-    lcd_gotoXY(0,1);
-    sprintf_P(str, PSTR("%d CODE(S) IN ECU"), nb);
-    lcd_print(str);
-    delay(2000);
-    lcd_cls();
-
-#ifdef ELM
-    // retrieve code
-    elm_command(str, PSTR("03\r"));
-    // ELM returns something like 43 01 33 00 00 00 00
-    if(str[0]!='4' && str[1]!='3')
-      return;  // something wrong
-
-    // must convert to P/C/B/U etc
-    lcd_print(str+3);
-    delay(5000);
-#else
-    // we display only the first 6 codes
-    // if you have more than 6 in your ECU
-    // your car is obviously wrong :-/
-
-    // retrieve code
-    cmd[0]=0x03;
-    iso_write_data(cmd, 1);
-
-    for(i=0;i<nb/3;i++)  // each received packet contain 3 codes
-    {
-      iso_read_data(buf, 6);
-
-      k=0;  // to build the string
-      for(j=0;j<3;j++)  // the 3 codes
-      {
-        switch(buf[j*2] & 0xC0)
-        {
-        case 0x00:
-          str[k]='P';  // powertrain
-          break;
-        case 0x40:
-          str[k]='C';  // chassis
-          break;
-        case 0x80:
-          str[k]='B';  // body
-          break;
-        case 0xC0:
-          str[k]='U';  // network
-          break;
-        }
-        k++;
-        str[k++]='0' + (buf[j*2] & 0x30)>>4;   // first digit is 0-3 only
-        str[k++]='0' + (buf[j*2] & 0x0F);
-        str[k++]='0' + (buf[j*2 +1] & 0xF0)>>4;
-        str[k++]='0' + (buf[j*2 +1] & 0x0F);
-      }
-      str[k]='\0';  // make asciiz
-      lcd_print(str);
-      lcd_gotoXY(0, 1);  // go to next line to display the 3 next
-    }
-#endif
-  }
-}
 
 byte comms_pids_per_second() {
 	return nbpid_per_second;
 }
 
 bool isEngineRunning() {
-	 long tempLong;
 	char str[STRLEN];
 	return (get_pid(ENGINE_RPM, str, &tempLong) && tempLong > 0) ? 1 : 0;
 }

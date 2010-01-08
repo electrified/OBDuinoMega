@@ -1,6 +1,8 @@
 #ifndef Comms_h
 #define Comms_h
 
+
+extern long tempLong;
 //PID.h
 
 /* PID stuff */
@@ -119,17 +121,19 @@
 #define ECO_VISUAL    0xFF   // Visually dispay relative economy with text (at end of program)
 #endif
 
+#include <avr/pgmspace.h>
+extern prog_char pctldpcts[];
 
-byte getPidResponseLength(byte *pid);
-boolean get_pid_value(byte pid, long *ret);
-boolean get_pid(byte pid, char *retbuf, long *ret);
+byte getPidResponseLength(uint8_t *pid);
+byte get_pid_value(uint8_t pid, long *ret);
+byte get_pid(uint8_t pid, char *retbuf, long *ret);
 void check_supported_pids(long *tempLong);
-boolean is_pid_supported(byte pid, byte mode);
-boolean verifyECUAlive(void);
+boolean is_pid_supported(uint8_t pid, byte mode);
+bool verifyECUAlive();
 void setOldTime();
 void getElapsedTime(unsigned long *delta_time);
 byte comms_pids_per_second();
 void check_mil_code(long *tempLong);
 void init_comms();
-
+bool isEngineRunning();
 #endif

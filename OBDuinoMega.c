@@ -62,27 +62,22 @@ To-Do:
 
 
 #undef int
+#include "project_defs.h"
 #include <stdio.h>
 #include <limits.h>
-
+#include "OBDuinoMega.h"
 #include <avr/pgmspace.h>
-#include "WProgram.h"
 #include "Common.h"
 #include "Comms.h"
-//#include "ISOComms.h"
-#include "Comms.h"
-#include "Memory.c"
+#include "ELMComms.h"
+#include "Memory.h"
 #include "Menu.h"
-#include "display.h"
-#include "Calculations.h"
+#include "Display.h"
 #include "LCD.h"
 #include "Host.h"
 
-
-
 void setup();
 void loop();
-
 
 byte logActive = 0;  // Flag used in logging state machine
 
@@ -99,13 +94,8 @@ byte gpsMonth, gpsDay, gpsHour, gpsMinute, gpsSecond, gpsHundredths;
 #include "floatToString.h"
 #endif
 
-
-
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(*(x)))
 
-// flag used to save distance/average consumption in eeprom only if required
-
-byte param_saved=0;
 
 #ifdef ELM
 #if defined do_ISO_Reinit
@@ -123,9 +113,6 @@ byte param_saved=0;
 boolean oldECUconnection;  // Used to test for change in ECU connection state
 #endif
 
-#ifdef carAlarmScreen
-boolean refreshAlarmScreen; // Used to cause non-repeating screen data to display
-#endif
 
 int main(void)
 {
@@ -150,13 +137,13 @@ void setup()                    // run once, when the sketch starts
   //digitalWrite(buttonGnd, LOW);
 #endif
 
-  hostPrintLn("OBDuinoMega starting up");
+//  hostPrintLn("OBDuinoMega starting up");
 #ifdef DEBUG
-  hostPrintLn("*********** DEBUG MODE *************");
+//  hostPrintLn("*********** DEBUG MODE *************");
 #endif
 
 #ifdef ENABLE_VDIP
-  initVdip();
+//  initVdip();
 #endif
 
 #ifdef ENABLE_GPS
@@ -164,7 +151,7 @@ void setup()                    // run once, when the sketch starts
 #endif
 
   // buttons init
-  hostPrint(" * Initialising buttons         ");
+//  hostPrint(" * Initialising buttons         ");
   menu_init_buttons();
   hostPrintLn("[OK]");
 
@@ -175,29 +162,30 @@ void setup()                    // run once, when the sketch starts
 
   // LCD pin init
   hostPrint(" * Initializing LCD             ");
-  lcd_setBrightness(2);
+  lcd_setBrightness();
   params_t params = getParameters();
 
   lcd_init(params.contrast);
   lcd_print_P(PSTR("OBDuinoMega"));
   hostPrintLn("[OK]");
+#ifdef ELM
+elm_init();
+#endif
 
-init_comms();
-
-#ifdef carAlarmScreen
-  hostPrint(" * Car-alarm screen setup       ");
-   refreshAlarmScreen = true;
-   hostPrintLn("[OK]");
-#endif      
+//#ifdef carAlarmScreen
+//  hostPrint(" * Car-alarm screen setup       ");
+//   refreshAlarmScreen = true;
+//   hostPrintLn("[OK]");
+//#endif      
 
   // check supported PIDs
-  hostPrint(" * Checking supported PIDs      ");
-  long tempLong;
+  //hostPrint(" * Checking supported PIDs      ");
+
   check_supported_pids(&tempLong);
   hostPrintLn("[OK]");
 
   // check if we have MIL code
-  hostPrint(" * Checking MIL code            ");
+  //hostPrint(" * Checking MIL code            ");
   //check_mil_code();
   hostPrintLn("[OK]");
 
@@ -205,7 +193,7 @@ init_comms();
   setOldTime();
   
   #ifdef ENABLE_VDIP
-  hostPrint(" * Attaching logging ISR        ");
+  //hostPrint(" * Attaching logging ISR        ");
   // Interrupt triggered by pressing "log on/off" button
   attachInterrupt(1, modeButton, FALLING);
   hostPrintLn("[OK]");
@@ -217,7 +205,7 @@ init_comms();
   attachInterrupt(0, powerFail, FALLING);
   hostPrintLn("[OK]");
   #endif
-  hostPrintLn("******** Startup completed *********");
+  //hostPrintLn("******** Startup completed *********");
 }
 
 
@@ -227,7 +215,6 @@ init_comms();
 void loop()
 {
   hostPrintLn("main");
-  long tempLong; // Useful for transitory values while getting PID information.
   
   #ifdef MEGA
   // Process any commands from the host
@@ -301,8 +288,7 @@ void loop()
     accu_trip();
   
     // display on LCD
-    for(byte current_PID=0; current_PID<LCD_PID_count; current_PID++)
-      display(current_PID, params.screen[active_screen].PID[current_PID]);
+	displayPids();
   }
   else
   {
@@ -313,12 +299,6 @@ void loop()
 	displayPids();
     #endif
 
-    #ifdef do_ISO_Reinit
-      #ifndef carAlarmScreen  
-      #error ISO reinit will not function when not displaying the car alarm screen (#define carAlarmScreen)
-      #endif
-      iso_init();
-    #endif
   }    
 #else
   char str[STRLEN];
@@ -329,8 +309,7 @@ void loop()
     displayAlarmScreen();
   #else
   // this read and assign vss and maf and accumulate trip data
-  accu_trip();
-
+  	accu_trip();
 	displayPids();
   #endif
 #endif
