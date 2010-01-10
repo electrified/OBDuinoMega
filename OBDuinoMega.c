@@ -96,19 +96,6 @@ byte gpsMonth, gpsDay, gpsHour, gpsMinute, gpsSecond, gpsHundredths;
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(*(x)))
 
-
-#ifdef ELM
-#if defined do_ISO_Reinit
-#error do_ISO_Reinit is ONLY ISO 9141 It is not to be used with ELM!
-#endif
-#endif
-
-#ifndef useECUState
-#if defined do_ISO_Reinit
-#error do_ISO_Reinit must have useECUState also defined
-#endif
-#endif
-
 #ifdef useECUState
 boolean oldECUconnection;  // Used to test for change in ECU connection state
 #endif
@@ -182,11 +169,6 @@ elm_init();
   //hostPrint(" * Checking supported PIDs      ");
 
   check_supported_pids(&tempLong);
-  hostPrintLn("[OK]");
-
-  // check if we have MIL code
-  //hostPrint(" * Checking MIL code            ");
-  //check_mil_code();
   hostPrintLn("[OK]");
 
   lcd_cls();

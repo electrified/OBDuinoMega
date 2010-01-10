@@ -34,20 +34,20 @@ boolean refreshAlarmScreen; // Used to cause non-repeating screen data to displa
 // some globals, for trip calculation and others
 unsigned long engine_on, engine_off; //used to track time of trip.
 
-prog_char * tripNames[NBTRIP] PROGMEM =
+char const *tripNames[NBTRIP] PROGMEM =
 {
   "Tank",
   "Trip",
   "Outing"
 };
 
-prog_char pctd[] PROGMEM="- %d + "; // used in a couple of place
-prog_char pctdpctpct[] PROGMEM="- %d%% + "; // used in a couple of place
-prog_char pctspcts[] PROGMEM="%s %s"; // used in a couple of place
+const char pctd[] PROGMEM="- %d + "; // used in a couple of place
+const char pctdpctpct[] PROGMEM="- %d%% + "; // used in a couple of place
+const char pctspcts[] PROGMEM="%s %s"; // used in a couple of place
 
 
 //The Textual Description of each PID
-prog_char *PID_Desc[] PROGMEM=
+const char *PID_Desc[] PROGMEM =
 {
 "PID00-21", // 0x00   PIDs supported
 "Stat DTC", // 0x01   Monitor status since DTCs cleared.
@@ -557,7 +557,7 @@ void displayAlarmScreen()
 }  
 #endif
 
-prog_char * econ_Visual[] PROGMEM=
+const char * econ_Visual[] PROGMEM =
 {
   "Yuck!!8{",
   "Awful :(",
