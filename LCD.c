@@ -1,5 +1,5 @@
 //LCD.c
-#include "Arduino\WProgram.h"
+#include "Arduino/WProgram.h"
 
 #include <avr/pgmspace.h>
 #include "Common.h"

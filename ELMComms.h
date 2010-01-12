@@ -1,7 +1,7 @@
 #ifndef ELMComms_h
 #define ELMComms_h
 
-#include "Arduino\WProgram.h"
+#include "Arduino/WProgram.h"
 #include "project_defs.h"
 
 byte elm_read(char *str, byte size);

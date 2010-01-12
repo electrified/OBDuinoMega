@@ -1,4 +1,4 @@
-#include "Arduino\WProgram.h"
+#include "Arduino/WProgram.h"
 #include <avr/pgmspace.h>
 
 // ex: get a long as 687 with prec 2 and output the string "6.87"

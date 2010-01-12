@@ -1,7 +1,7 @@
 // Display.pde
 //#include "PString.h"
 #include "project_defs.h"
-#include "Arduino\WProgram.h"
+#include "Arduino/WProgram.h"
 #include "Common.h"
 #include "Comms.h"
 #include "Memory.h"

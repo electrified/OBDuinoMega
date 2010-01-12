@@ -14,9 +14,9 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include "Arduino\WProgram.h"
+#include "Arduino/WProgram.h"
 #include <avr/pgmspace.h>
-#include "host.h"
+#include "Host.h"
 #include "Common.h"
 #include "LCD.h"
 #include "Display.h"

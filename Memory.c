@@ -2,7 +2,7 @@
 #define MEMORY_C
 //Memory.pde
 #include "project_defs.h"
-#include "Arduino\WProgram.h"
+#include "Arduino/WProgram.h"
 #include "Host.h"
 
 #include "Comms.h"
