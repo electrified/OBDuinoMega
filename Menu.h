@@ -4,10 +4,11 @@
 
 void displaySecondLine(byte position, char * str);
 byte menu_select_yes_no(byte p);
-void delay_reset_button();
+void delay_reset_button(void);
 void trip_reset(byte ctrip, boolean ask);
-void test_buttons();
+void test_buttons(void);
 //void config_menu();
 byte menu_selection(char ** menu, byte arraySize);
-void menu_init_buttons();
-void displayPids();
+void menu_init_buttons(void);
+void displayPids(void);
+char SetClockFormat(char input);

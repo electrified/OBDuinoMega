@@ -124,16 +124,15 @@ extern long tempLong;
 #include <avr/pgmspace.h>
 extern prog_char pctldpcts[];
 
-byte getPidResponseLength(uint8_t *pid);
-byte get_pid_value(uint8_t pid, long *ret);
-byte get_pid(uint8_t pid, char *retbuf, long *ret);
+uint8_t getPidResponseLength(uint8_t *pid);
+bool get_pid(uint8_t pid, char *retbuf, long *ret);
 void check_supported_pids(long *tempLong);
-boolean is_pid_supported(uint8_t pid, byte mode);
-bool verifyECUAlive();
-void setOldTime();
+bool is_pid_supported(uint8_t pid, uint8_t mode);
+bool verifyECUAlive(void);
+void setOldTime(void);
 void getElapsedTime(unsigned long *delta_time);
-byte comms_pids_per_second();
+uint8_t comms_pids_per_second(void);
 void check_mil_code(long *tempLong);
-void init_comms();
-bool isEngineRunning();
+void init_comms(void);
+bool isEngineRunning(void);
 #endif

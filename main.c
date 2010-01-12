@@ -1,50 +1,13 @@
 /**
+ Copyright (C) 2008-2009
  * OBDuinoMega  (Requres ATmega1280 for some features, can
  * build for Atmega328 if features are turned off)
- *
- * Based on OBDuino32K by many people as credited below.
- *
- * Mega support added by Jonathan Oxer <jon@oxer.com.au>
- */
- 
-/**
- Copyright (C) 2008-2009
-
  Main coding/ISO/ELM: Fr�d�ric (aka Magister on ecomodder.com)
  LCD part: Dave (aka dcb on ecomodder.com), optimized by Fr�d�ric
  ISO Communication Protocol: Russ, Antony, Mike
  Features: Mike, Antony
  Bugs & Fixes: Antony, Fr�d�ric, Mike
-
-Latest Changes(June 9th, 2009):
- ISO 9141 re-init, ECU polling, Car alarm and other tweaks by Antony
-June 24, 1009:
- Added three parameters to the mix, removed unrequired RPM call,
-   added off and full to backlight levels, added waste PIDs: Antony
-June 25, 2009:
- Use the metric parameter for fuel price and tank size: Antony
-June 27, 2009:
- Minor corrections and tweaks: Antony
-July 23, 2009:
- New menuing system for parameters, and got rid of display flicker: Antony
-Sept 01, 2009:
- Better handling of 14230 protocol. Tweak in clear button routine: Antony
-
-To-Do:
-  Bugs:
-    Fix code to retrieve stored trouble codes.
-    
-  Features Requested:
-    Aero-Drag calculations?
-    SD Card logging    
-    Add another Fake PID to track max values ( Speed, RPM, Tank KM's, etc...)
-  Other:
-    Add a variable for the age of the last reading of a PID, for the chance it 
-        could be reused. (Great for RPM, SPEED, since they are used multiple 
-        times in one loop of the program) 
-    Add a "dirty" flag to tank data when the obduino detects that it has been
-        disconnected from the car to indicate that the data may no longer be complete
-
+ Mega support added by Jonathan Oxer <jon@oxer.com.au>
  
  This program is free software; you can redistribute it and/or modify it under
  the terms of the GNU General Public License as published by the Free Software
@@ -60,12 +23,11 @@ To-Do:
  59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
  */
 
-
 #undef int
 #include "project_defs.h"
 #include <stdio.h>
 #include <limits.h>
-#include "OBDuinoMega.h"
+#include "main.h"
 #include <avr/pgmspace.h>
 #include "Common.h"
 #include "Comms.h"
@@ -75,9 +37,9 @@ To-Do:
 #include "Display.h"
 #include "LCD.h"
 #include "Host.h"
+#include "Menu2.h"
 
-void setup();
-void loop();
+
 
 byte logActive = 0;  // Flag used in logging state machine
 
@@ -283,7 +245,7 @@ void loop()
 
   }    
 #else
-  char str[STRLEN];
+
 
   has_engine_started_or_stopped();
 
@@ -300,6 +262,7 @@ void loop()
   test_buttons();
 
   #ifdef ENABLE_VDIP
+    char str[STRLEN];
   // Get PIDs we want to store on the memory stick
   if( logActive == 1 )
   {

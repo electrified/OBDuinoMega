@@ -9,7 +9,7 @@ void elm_write(char *str);
 byte elm_check_response(const char *cmd, char *str);
 byte elm_compact_response(byte *buf, char *str);
 byte elm_command(char *str, char *cmd);
-void elm_init();
+void elm_init(void);
 
 boolean get_pid_elm(byte pid, byte buf[]);
 

@@ -22,8 +22,9 @@
 #include "Display.h"
 #include "Comms.h"
 #include "Utilities.h"
-#include "Menu.h"
 #include "Memory.h"
+#include "Menu.h"
+#include "button.h"
 
 #define buttonsUp 0 // start with the buttons in the 'not pressed' state
 byte buttonState = buttonsUp;
@@ -810,3 +811,64 @@ void displayPids() {
     for(byte current_PID=0; current_PID<LCD_PID_count; current_PID++)
       display(current_PID, params.screen[active_screen].PID[current_PID]);
 }
+
+/*****************************************************************************
+*
+*   Function name : SetClockFormat
+*
+*   Returns :       char ST_state (to the state-machine)
+*
+*   Parameters :    char input (from joystick)
+*
+*   Purpose :       Adjusts the Clockformat
+*
+*****************************************************************************/
+char SetClockFormat(char input)
+{
+	int clockformat = 1; //HACK
+  static char enter = 1;
+    
+    if(enter)
+    {
+        enter = 0;
+        
+        if(clockformat == 2)
+            lcd_print("24H");	 // mt LCD_puts("24H", 1);            
+        else
+            lcd_print("12H");	// mt LCD_puts("12H", 1);		
+
+    }
+    if (input == KEY_PLUS)
+    {
+        if(clockformat == 2)
+        {
+            clockformat = 1;
+            lcd_print("12H"); // mt LCD_puts("12H", 1);
+        }
+        else
+        {
+            clockformat = 2;
+            lcd_print("24H"); // mt LCD_puts("24H", 1);            
+        }
+    }
+    else if (input == KEY_MINUS)
+    {
+        if(clockformat == 1)
+        {
+            clockformat = 2;
+            lcd_print("24H");	// mt LCD_puts("24H", 1);
+        }
+        else
+        {
+            clockformat = 1;
+            lcd_print("12H");   // mt LCD_puts("12H", 1);            
+        }
+    }
+    else if (input == KEY_ENTER)    
+    {
+        enter = 1;
+        return ST_TIME_CLOCK_FUNC;
+    }        
+    return ST_TIME_CLOCKFORMAT_ADJUST_FUNC;
+}
+

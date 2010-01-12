@@ -1,5 +1,3 @@
-// Display.pde
-//#include "PString.h"
 #include "project_defs.h"
 #include "Arduino/WProgram.h"
 #include "Common.h"
@@ -28,7 +26,7 @@ long maf = 0;  // MAF
 
 
 #ifdef carAlarmScreen
-boolean refreshAlarmScreen; // Used to cause non-repeating screen data to display
+bool refreshAlarmScreen; // Used to cause non-repeating screen data to display
 #endif
 
 // some globals, for trip calculation and others

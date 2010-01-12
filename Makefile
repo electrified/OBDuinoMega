@@ -37,7 +37,7 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 
 
 ## Objects that must be built in order to link
-OBJECTS = OBDuinoMega.o Comms.o Display.o ELMComms.o GPS.o Host.o LCD.o Memory.o Menu.o PowerFail.o utilities.o VDIP.o HardwareSerial.o pins_arduino.o Print.o WInterrupts.o wiring.o wiring_analog.o wiring_digital.o wiring_shift.o
+OBJECTS = main.o Comms.o Display.o ELMComms.o GPS.o Host.o LCD.o Memory.o Menu.o PowerFail.o Utilities.o VDIP.o HardwareSerial.o pins_arduino.o Print.o WInterrupts.o wiring.o wiring_analog.o wiring_digital.o wiring_shift.o
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
@@ -46,7 +46,7 @@ LINKONLYOBJECTS =
 all: $(TARGET) OBDuinoMega.hex OBDuinoMega.eep OBDuinoMega.lss size
 
 ## Compile
-OBDuinoMega.o: ../OBDuinoMega.c
+main.o: ../main.c
 	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
 
 Comms.o: ../Comms.c
@@ -76,7 +76,7 @@ Menu.o: ../Menu.c
 PowerFail.o: ../PowerFail.c
 	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
 
-utilities.o: ../utilities.c
+Utilities.o: ../Utilities.c
 	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
 
 VDIP.o: ../VDIP.c

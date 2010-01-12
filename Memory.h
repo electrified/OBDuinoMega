@@ -6,9 +6,9 @@
 #include "Display.h"
 #include "Menu.h"
 
-void params_save();
-void params_load();
-int memoryTest();
+void params_save(void);
+void params_load(void);
+int memoryTest(void);
 
 // How many characters across for the LCD (must be at least sixteen)
 extern const byte LCD_width;
@@ -54,7 +54,7 @@ typedef struct
 params_t;
 
 
-params_t getParameters();
+params_t getParameters(void);
 
 extern params_t params;
 

@@ -7,7 +7,7 @@
 #include <avr/wdt.h>
 #include <avr/version.h>
 #include "Common.h"
-#include "Button.h"
+
 #include "Menu2.h"
 
 char PowerSave = FALSE;
