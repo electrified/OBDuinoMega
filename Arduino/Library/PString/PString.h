@@ -20,7 +20,7 @@
 #ifndef PString_h
 #define PString_h
 
-#include "Print.h"
+#include "Arduino/Print.h"
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>

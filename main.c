@@ -24,6 +24,7 @@
  */
 
 #undef int
+#include "Arduino/WProgram.h"
 #include "project_defs.h"
 #include <stdio.h>
 #include <limits.h>
@@ -37,7 +38,7 @@
 #include "Display.h"
 #include "LCD.h"
 #include "Host.h"
-#include "Menu2.h"
+//#include "Menu2.h"
 
 
 

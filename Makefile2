@@ -76,7 +76,7 @@ PROJECTNAME=OBDuino
 # (list all files to compile, e.g. 'a.c b.cpp as.S'):
 # Use .cc, .cpp or .C suffix for C++ files, use .S 
 # (NOT .s !!!) for assembly source code files.
-PRJSRC=main.c Comms.c Display.c ELMComms.c GPS.c Host.c LCD.c Memory.c Menu2.c Menu.c PowerFail.c Utilities.c VDIP.c
+PRJSRC=main.c Comms.c Display.c ELMComms.c GPS.c Host.c LCD.c Memory.c Menu.c PowerFail.c Utilities.c VDIP.c Arduino/wiring.c Arduino/wiring_analog.c Arduino/wiring_digital.c Arduino/HardwareSerial.cpp Arduino/pins_arduino.c Arduino/Print.cpp Arduino/Library/PString/PString.cpp
 
 # additional includes (e.g. -I/path/to/mydir)
 INC=
@@ -96,19 +96,15 @@ OPTLEVEL=s
 #####  options and use 'make writeflash' to program
 #####  the device.
 
+# Programming support using avrdude. Settings and variables.
+UPLOAD_RATE = 19200
+AVRDUDE_PROGRAMMER = stk500v1
+AVRDUDE_PORT = /dev/tty.usb*
+AVRDUDE_WRITE_FLASH = -U flash:w:$(TARGET).hex
+AVRDUDE_FLAGS = -V -F -C $(INSTALL_DIR)/hardware/tools/avr/etc/avrdude.conf \
+-p $(MCU) -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER) \
+-b $(UPLOAD_RATE)
 
-# programmer id--check the avrdude for complete list
-# of available opts.  These should include stk500,
-# avr910, avrisp, bsd, pony and more.  Set this to
-# one of the valid "-c PROGRAMMER-ID" values 
-# described in the avrdude info page.
-# 
-AVRDUDE_PROGRAMMERID=stk500
-
-# port--serial or parallel port to which your 
-# hardware programmer is attached
-#
-AVRDUDE_PORT=/dev/ttyS0
 
 
 ####################################################
@@ -129,7 +125,7 @@ HEXFORMAT=ihex
 
 # compiler
 CFLAGS=-I. $(INC) -g -mmcu=$(MCU) -O$(OPTLEVEL) \
-	-fpack-struct -fshort-enums             \
+	-fpack-struct -fshort-enums -std=c99            \
 	-funsigned-bitfields -funsigned-char    \
 	-Wall -Wstrict-prototypes               \
 	-Wa,-ahlms=$(firstword                  \
@@ -205,7 +201,7 @@ GENASMFILES=$(filter %.s, $(OBJDEPS:.o=.s))
 
 # Make targets:
 # all, disasm, stats, hex, writeflash/install, clean
-all: $(TRG)
+all: $(TRG) size
 
 disasm: $(DUMPTRG) stats
 
@@ -215,11 +211,17 @@ stats: $(TRG)
 
 hex: $(HEXTRG)
 
+size: ${TRG}
+	@echo
+	@avr-size -C --mcu=${MCU} ${TRG}
 
 writeflash: hex
 	$(AVRDUDE) -c $(AVRDUDE_PROGRAMMERID)   \
 	 -p $(MCU) -P $(AVRDUDE_PORT) -e        \
 	 -U flash:w:$(HEXROMTRG)
+
+#applet/$(TARGET).hex
+#	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH)
 
 install: writeflash
 
@@ -250,12 +252,12 @@ $(TRG): $(OBJDEPS)
 #### Generating object files ####
 # object from C
 .c.o: 
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -c $< -o $@
 
 
 # object from C++ (.cc, .cpp, .C files)
 .cc.o .cpp.o .C.o :
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 # object from asm
 .S.o :

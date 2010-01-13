@@ -12,9 +12,9 @@
 // How many characters across for the LCD (must be at least sixteen)
 const byte LCD_width = 16;
 // Calculate the middle point of the LCD display width
-const byte LCD_split = LCD_width / 2;
+const byte LCD_split = 8;//LCD_width / 2;
 //Calculate how many PIDs fit on a data screen (two per line)
-const byte LCD_PID_count = LCD_ROWS * 2;
+const byte LCD_PID_count = 8;//LCD_ROWS * 2;
 
 // parameters default values
 params_t params=

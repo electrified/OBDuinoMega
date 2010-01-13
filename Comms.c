@@ -63,7 +63,7 @@ void getElapsedTime(unsigned long *delta_time) {
  * string output in the return buffer. Return value denotes successful
  * retrieval of PID. User must pass in a long pointer to get the PID value.
  */
-bool get_pid(uint8_t pid, char *retbuf, long *ret)
+boolean get_pid(uint8_t pid, char *retbuf, long *ret)
 {
   //hostPrintLn("entering get_pid");
   byte buf[10];   // to receive the result
@@ -347,7 +347,7 @@ void check_supported_pids(long *tempLong)
 
 // return false if pid is not supported, true if it is.
 // mode is 0 for get_pid() and 1 for menu config to allow pid > 0xF0
-bool is_pid_supported(uint8_t pid, uint8_t mode)
+boolean is_pid_supported(uint8_t pid, uint8_t mode)
 {
    return !((pid>0x00 && pid<=0x20 && ( 1L<<(0x20-pid) & pid01to20_support ) == 0 ) ||
             (pid>0x20 && pid<=0x40 && ( 1L<<(0x40-pid) & pid21to40_support ) == 0 ) ||
@@ -356,7 +356,7 @@ bool is_pid_supported(uint8_t pid, uint8_t mode)
  }
 
 #ifdef useECUState
-bool verifyECUAlive()
+boolean verifyECUAlive()
 {
   char cmd_str[6];   // to send to ELM
   char str[STRLEN];   // to receive from ELM
@@ -371,7 +371,7 @@ uint8_t comms_pids_per_second() {
 	return nbpid_per_second;
 }
 
-bool isEngineRunning() {
+boolean isEngineRunning() {
 	char str[STRLEN];
 	return (get_pid(ENGINE_RPM, str, &tempLong) && tempLong > 0) ? 1 : 0;
 }

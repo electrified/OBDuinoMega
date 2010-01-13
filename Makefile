@@ -47,64 +47,64 @@ all: $(TARGET) OBDuinoMega.hex OBDuinoMega.eep OBDuinoMega.lss size
 
 ## Compile
 main.o: ../main.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 Comms.o: ../Comms.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 Display.o: ../Display.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 ELMComms.o: ../ELMComms.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 GPS.o: ../GPS.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 Host.o: ../Host.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 LCD.o: ../LCD.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 Memory.o: ../Memory.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 Menu.o: ../Menu.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 PowerFail.o: ../PowerFail.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 Utilities.o: ../Utilities.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 VDIP.o: ../VDIP.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 HardwareSerial.o: ../Arduino/HardwareSerial.cpp
 	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
 
 pins_arduino.o: ../Arduino/pins_arduino.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 Print.o: ../Arduino/Print.cpp
 	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
 
 WInterrupts.o: ../Arduino/WInterrupts.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 wiring.o: ../Arduino/wiring.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 wiring_analog.o: ../Arduino/wiring_analog.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 wiring_digital.o: ../Arduino/wiring_digital.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 wiring_shift.o: ../Arduino/wiring_shift.c
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 ##Link
 $(TARGET): $(OBJECTS)

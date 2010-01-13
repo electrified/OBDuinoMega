@@ -18,6 +18,7 @@
  
  Modified 23 November 2006 by David A. Mellis
  */
+extern "C" void __cxa_pure_virtual() {}
 
 #include <stdio.h>
 #include <string.h>

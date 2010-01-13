@@ -212,7 +212,7 @@ void lcd_increase_brightness() {
 /**
  * needBacklight
  */
-void needBacklight(bool On)
+void needBacklight(boolean On)
 {
   //only if ECU or engine are off do we need the backlight.
 #ifdef useECUState

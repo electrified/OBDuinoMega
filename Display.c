@@ -19,8 +19,8 @@
 
 byte param_saved=0;
 
-bool has_rpm = false;
-bool engine_started = false;
+boolean has_rpm = false;
+boolean engine_started = false;
 long vss = 0;  // speed
 long maf = 0;  // MAF
 

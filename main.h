@@ -1,8 +1,4 @@
 
-//extern "C" void __cxa_pure_virtual() {}
-
-#include "Arduino/WProgram.h"
-
 // Menu state machine states
 #define ST_AVRBF                        10
 #define ST_AVRBF_REV                    11

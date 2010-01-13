@@ -125,14 +125,14 @@ extern long tempLong;
 extern prog_char pctldpcts[];
 
 uint8_t getPidResponseLength(uint8_t *pid);
-bool get_pid(uint8_t pid, char *retbuf, long *ret);
+boolean get_pid(uint8_t pid, char *retbuf, long *ret);
 void check_supported_pids(long *tempLong);
-bool is_pid_supported(uint8_t pid, uint8_t mode);
-bool verifyECUAlive(void);
+boolean is_pid_supported(uint8_t pid, uint8_t mode);
+boolean verifyECUAlive(void);
 void setOldTime(void);
 void getElapsedTime(unsigned long *delta_time);
 uint8_t comms_pids_per_second(void);
 void check_mil_code(long *tempLong);
 void init_comms(void);
-bool isEngineRunning(void);
+boolean isEngineRunning(void);
 #endif

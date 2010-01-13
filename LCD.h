@@ -17,7 +17,7 @@ void lcd_pushNibble(uint8_t value);
 void lcd_commandWrite(uint8_t value);
 void lcd_dataWrite(uint8_t value);
 void lcd_setBrightness(void);
-void needBacklight(bool on);
+void needBacklight(boolean on);
 void lcd_increase_brightness(void);
 
 #endif
