@@ -1,134 +1,295 @@
-###############################################################################
-# Makefile for the project OBDuinoMega
-###############################################################################
-
-## General Flags
-PROJECT = OBDuinoMega
-MCU = atmega328p
-TARGET = OBDuinoMega.elf
-CC = avr-gcc
-
-CPP = avr-g++
-
-## Options common to compile, link and assembly rules
-COMMON = -mmcu=$(MCU)
-
-## Compile options common for all C compilation units.
-CFLAGS = $(COMMON)
-CFLAGS += -gdwarf-2 -std=gnu99   -Wall          -DF_CPU=16000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
-CFLAGS += -MD -MP -MT $(*F).o -MF dep/$(@F).d 
-
-## Assembly specific flags
-ASMFLAGS = $(COMMON)
-ASMFLAGS += $(CFLAGS)
-ASMFLAGS += -x assembler-with-cpp -Wa,-gdwarf2
-
-## Linker flags
-LDFLAGS = $(COMMON)
-LDFLAGS +=  -Wl,-Map=OBDuinoMega.map
+#########  AVR Project Makefile Template   #########
+######                                        ######
+######    Copyright (C) 2003, Pat Deegan,     ######
+######            Psychogenic Inc             ######
+######          All Rights Reserved           ######
+######                                        ######
+###### You are free to use this code as part  ######
+###### of your own applications provided      ######
+###### you keep this copyright notice intact  ######
+###### and acknowledge its authorship with    ######
+###### the words:                             ######
+######                                        ######
+###### "Contains software by Pat Deegan of    ######
+###### Psychogenic Inc (www.psychogenic.com)" ######
+######                                        ######
+###### If you use it as part of a web site    ######
+###### please include a link to our site,     ######
+###### http://electrons.psychogenic.com  or   ######
+###### http://www.psychogenic.com             ######
+######                                        ######
+####################################################
 
 
-## Intel Hex file production flags
-HEX_FLASH_FLAGS = -R .eeprom -R .fuse -R .lock -R .signature
+##### This Makefile will make compiling Atmel AVR 
+##### micro controller projects simple with Linux 
+##### or other Unix workstations and the AVR-GCC 
+##### tools.
+#####
+##### It supports C, C++ and Assembly source files.
+#####
+##### Customize the values as indicated below and :
+##### make
+##### make disasm 
+##### make stats 
+##### make hex
+##### make writeflash
+##### make gdbinit
+##### or make clean
+#####
+##### See the http://electrons.psychogenic.com/ 
+##### website for detailed instructions
 
-HEX_EEPROM_FLAGS = -j .eeprom
-HEX_EEPROM_FLAGS += --set-section-flags=.eeprom="alloc,load"
-HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
+
+####################################################
+#####                                          #####
+#####              Configuration               #####
+#####                                          #####
+##### Customize the values in this section for #####
+##### your project. MCU, PROJECTNAME and       #####
+##### PRJSRC must be setup for all projects,   #####
+##### the remaining variables are only         #####
+##### relevant to those needing additional     #####
+##### include dirs or libraries and those      #####
+##### who wish to use the avrdude programmer   #####
+#####                                          #####
+##### See http://electrons.psychogenic.com/    #####
+##### for further details.                     #####
+#####                                          #####
+####################################################
 
 
-## Objects that must be built in order to link
-OBJECTS = main.o Comms.o Display.o ELMComms.o GPS.o Host.o LCD.o Memory.o Menu.o PowerFail.o Utilities.o VDIP.o HardwareSerial.o pins_arduino.o Print.o WInterrupts.o wiring.o wiring_analog.o wiring_digital.o wiring_shift.o
+#####         Target Specific Details          #####
+#####     Customize these for your project     #####
 
-## Objects explicitly added by the user
-LINKONLYOBJECTS = 
+# Name of target controller 
+# (e.g. 'at90s8515', see the available avr-gcc mmcu 
+# options for possible values)
+MCU=atmega328p
 
-## Build
-all: $(TARGET) OBDuinoMega.hex OBDuinoMega.eep OBDuinoMega.lss size
+# Name of our project
+# (use a single word, e.g. 'myproject')
+PROJECTNAME=OBDuino
 
-## Compile
-main.o: ../main.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+# Source files
+# List C/C++/Assembly source files:
+# (list all files to compile, e.g. 'a.c b.cpp as.S'):
+# Use .cc, .cpp or .C suffix for C++ files, use .S 
+# (NOT .s !!!) for assembly source code files.
+PRJSRC=main.c Comms.c Display.c ELMComms.c GPS.c Host.c LCD.c Memory.c Menu.c PowerFail.c Utilities.c VDIP.c Arduino/wiring.c Arduino/wiring_analog.c Arduino/wiring_digital.c Arduino/HardwareSerial.cpp Arduino/pins_arduino.c Arduino/Print.cpp Arduino/Library/PString/PString.cpp
 
-Comms.o: ../Comms.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+# additional includes (e.g. -I/path/to/mydir)
+INC=
 
-Display.o: ../Display.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+# libraries to link in (e.g. -lmylib)
+LIBS=
 
-ELMComms.o: ../ELMComms.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+# Optimization level, 
+# use s (size opt), 1, 2, 3 or 0 (off)
+OPTLEVEL=s
 
-GPS.o: ../GPS.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-Host.o: ../Host.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+#####      AVR Dude 'writeflash' options       #####
+#####  If you are using the avrdude program
+#####  (http://www.bsdhome.com/avrdude/) to write
+#####  to the MCU, you can set the following config
+#####  options and use 'make writeflash' to program
+#####  the device.
 
-LCD.o: ../LCD.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+# Programming support using avrdude. Settings and variables.
+UPLOAD_RATE = 57600
+AVRDUDE_PROGRAMMER = arduino
+AVRDUDE_PORT = /dev/ttyUSB0
+AVRDUDE_WRITE_FLASH = -U flash:w:$(HEXROMTRG)
+AVRDUDE_FLAGS = -v -v -V -F  \
+-p $(MCU) -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER) \
+-b $(UPLOAD_RATE)
 
-Memory.o: ../Memory.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+##### Flags ####
 
-Menu.o: ../Menu.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+# HEXFORMAT -- format for .hex file output
+HEXFORMAT=ihex
 
-PowerFail.o: ../PowerFail.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+# compiler
+CFLAGS=-I. $(INC) -g -mmcu=$(MCU) -O$(OPTLEVEL) \
+	-fpack-struct -fshort-enums -std=c99            \
+	-funsigned-bitfields -funsigned-char    \
+	-Wall -Wstrict-prototypes               \
+	-Wa,-ahlms=$(firstword                  \
+	$(filter %.lst, $(<:.c=.lst)))
 
-Utilities.o: ../Utilities.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+# c++ specific flags
+CPPFLAGS=-fno-exceptions               \
+	-Wa,-ahlms=$(firstword         \
+	$(filter %.lst, $(<:.cpp=.lst))\
+	$(filter %.lst, $(<:.cc=.lst)) \
+	$(filter %.lst, $(<:.C=.lst)))
 
-VDIP.o: ../VDIP.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+# assembler
+ASMFLAGS =-I. $(INC) -mmcu=$(MCU)        \
+	-x assembler-with-cpp            \
+	-Wa,-gstabs,-ahlms=$(firstword   \
+		$(<:.S=.lst) $(<.s=.lst))
 
-HardwareSerial.o: ../Arduino/HardwareSerial.cpp
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
 
-pins_arduino.o: ../Arduino/pins_arduino.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+# linker
+LDFLAGS=-Wl,-Map,$(TRG).map -mmcu=$(MCU) \
+	-lm $(LIBS)
 
-Print.o: ../Arduino/Print.cpp
-	$(CPP) $(INCLUDES) $(CFLAGS) -c  $<
+##### executables ####
+CC=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+AVRDUDE=avrdude
+REMOVE=rm -f
 
-WInterrupts.o: ../Arduino/WInterrupts.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+##### automatic target names ####
+TRG=$(PROJECTNAME).out
+DUMPTRG=$(PROJECTNAME).s
 
-wiring.o: ../Arduino/wiring.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+HEXROMTRG=$(PROJECTNAME).hex 
+HEXTRG=$(HEXROMTRG) $(PROJECTNAME).ee.hex
+GDBINITFILE=gdbinit-$(PROJECTNAME)
 
-wiring_analog.o: ../Arduino/wiring_analog.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+# Define all object files.
 
-wiring_digital.o: ../Arduino/wiring_digital.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+# Start by splitting source files by type
+#  C++
+CPPFILES=$(filter %.cpp, $(PRJSRC))
+CCFILES=$(filter %.cc, $(PRJSRC))
+BIGCFILES=$(filter %.C, $(PRJSRC))
+#  C
+CFILES=$(filter %.c, $(PRJSRC))
+#  Assembly
+ASMFILES=$(filter %.S, $(PRJSRC))
 
-wiring_shift.o: ../Arduino/wiring_shift.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-##Link
-$(TARGET): $(OBJECTS)
-	 $(CPP) $(LDFLAGS) $(OBJECTS) $(LINKONLYOBJECTS) $(LIBDIRS) $(LIBS) -o $(TARGET)
+# List all object files we need to create
+OBJDEPS=$(CFILES:.c=.o)    \
+	$(CPPFILES:.cpp=.o)\
+	$(BIGCFILES:.C=.o) \
+	$(CCFILES:.cc=.o)  \
+	$(ASMFILES:.S=.o)
 
-%.hex: $(TARGET)
-	avr-objcopy -O ihex $(HEX_FLASH_FLAGS)  $< $@
+# Define all lst files.
+LST=$(filter %.lst, $(OBJDEPS:.o=.lst))
 
-%.eep: $(TARGET)
-	-avr-objcopy $(HEX_EEPROM_FLAGS) -O ihex $< $@ || exit 0
+# All the possible generated assembly 
+# files (.s files)
+GENASMFILES=$(filter %.s, $(OBJDEPS:.o=.s)) 
 
-%.lss: $(TARGET)
-	avr-objdump -h -S $< > $@
 
-size: ${TARGET}
+.SUFFIXES : .c .cc .cpp .C .o .out .s .S \
+	.hex .ee.hex .h .hh .hpp
+
+
+.PHONY: upload clean stats gdbinit stats
+
+# Make targets:
+# all, disasm, stats, hex, writeflash/install, clean
+all: $(TRG) size
+
+disasm: $(DUMPTRG) stats
+
+stats: $(TRG)
+	$(OBJDUMP) -h $(TRG)
+	$(SIZE) $(TRG) 
+
+hex: $(HEXTRG)
+
+size: ${TRG}
 	@echo
-	@avr-size -C --mcu=${MCU} ${TARGET}
+	@avr-size -C --mcu=${MCU} ${TRG}
 
-## Clean target
-.PHONY: clean
+#writeflash: hex
+#	$(AVRDUDE) -c $(AVRDUDE_PROGRAMMER)   \
+#	 -p $(MCU) -P $(AVRDUDE_PORT) -e        \
+#	 -U flash:w:$(HEXROMTRG)
+
+upload: hex
+	~/test.pl
+	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH)
+
+$(DUMPTRG): $(TRG) 
+	$(OBJDUMP) -S  $< > $@
+
+
+$(TRG): $(OBJDEPS) 
+	$(CC) $(LDFLAGS) -o $(TRG) $(OBJDEPS)
+
+
+#### Generating assembly ####
+# asm from C
+%.s: %.c
+	$(CC) -S $(CFLAGS) $< -o $@
+
+# asm from (hand coded) asm
+%.s: %.S
+	$(CC) -S $(ASMFLAGS) $< > $@
+
+
+# asm from C++
+.cpp.s .cc.s .C.s :
+	$(CC) -S $(CFLAGS) $(CPPFLAGS) $< -o $@
+
+
+
+#### Generating object files ####
+# object from C
+.c.o: 
+	$(CC) $(CFLAGS) -c $< -o $@
+
+
+# object from C++ (.cc, .cpp, .C files)
+.cc.o .cpp.o .C.o :
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+
+# object from asm
+.S.o :
+	$(CC) $(ASMFLAGS) -c $< -o $@
+
+
+#### Generating hex files ####
+# hex files from elf
+#####  Generating a gdb initialisation file    #####
+.out.hex:
+	$(OBJCOPY) -j .text                    \
+		-j .data                       \
+		-O $(HEXFORMAT) $< $@
+
+.out.ee.hex:
+	$(OBJCOPY) -j .eeprom                  \
+		--change-section-lma .eeprom=0 \
+		-O $(HEXFORMAT) $< $@
+
+
+#####  Generating a gdb initialisation file    #####
+##### Use by launching simulavr and avr-gdb:   #####
+#####   avr-gdb -x gdbinit-myproject           #####
+gdbinit: $(GDBINITFILE)
+
+$(GDBINITFILE): $(TRG)
+	@echo "file $(TRG)" > $(GDBINITFILE)
+	
+	@echo "target remote localhost:1212" \
+		                >> $(GDBINITFILE)
+	
+	@echo "load"        >> $(GDBINITFILE) 
+	@echo "break main"  >> $(GDBINITFILE)
+	@echo "continue"    >> $(GDBINITFILE)
+	@echo
+	@echo "Use 'avr-gdb -x $(GDBINITFILE)'"
+
+
+#### Cleanup ####
 clean:
-	-rm -rf $(OBJECTS) OBDuinoMega.elf dep/* OBDuinoMega.hex OBDuinoMega.eep OBDuinoMega.lss OBDuinoMega.map
+	$(REMOVE) $(TRG) $(TRG).map $(DUMPTRG)
+	$(REMOVE) $(OBJDEPS)
+	$(REMOVE) $(LST) $(GDBINITFILE)
+	$(REMOVE) $(GENASMFILES)
+	$(REMOVE) $(HEXTRG)
+	
 
 
-## Other dependencies
--include $(shell mkdir dep 2>/dev/null) $(wildcard dep/*)
-
+#####                    EOF                   #####
