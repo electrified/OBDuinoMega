@@ -64,7 +64,7 @@ boolean oldECUconnection;  // Used to test for change in ECU connection state
 #endif
 
 
-int main(void)
+__attribute__ ((OS_main)) int main(void)
 {
 	init();
 
